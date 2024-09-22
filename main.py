@@ -3,6 +3,12 @@ import time
 import random
 from tile import Tile
 
+# add win checker
+# add timer
+# add flags left
+# add menu screen (options for board size and number of mines)
+# add auto resize window
+
 # reveals the tile the player clicked on
 def check_grid(grid, position, flag):
     for row in grid:
@@ -64,16 +70,18 @@ def reveal_mine_locations(grid):
 def generate_grid(number_of_mines, grid_height, grid_length):
     grid = []
     y = 0
+    # generates base grid
     for i in range(grid_height):
         row = []
         x = 0
         for j in range(grid_length):
-            t = Tile(x * 16, y * 16, 0)
+            # tiles are offset for top bar
+            t = Tile(100 + x * 16, 100 + y * 16, 0)
             row.append(t)
             x += 1
         grid.append(row)
         y += 1
-    # generates base grid
+    # randomly assigns mines
     for i in range(number_of_mines):
         y = random.randint(0, grid_height - 1)
         x = random.randint(0, grid_length - 1)
@@ -81,7 +89,7 @@ def generate_grid(number_of_mines, grid_height, grid_length):
             y = random.randint(0, grid_height - 1)
             x = random.randint(0, grid_length - 1)
         if grid[y][x].type != "mine":
-            grid[y][x] = Tile(x * 16, y * 16, "mine")
+            grid[y][x] = Tile(grid[y][x].x, grid[y][x].y, "mine")
         x = 0
     return grid
 
@@ -118,14 +126,15 @@ def reveal_surrounding_tiles(grid):
                         x_check = -1
                         for check in tile_row:
                             if check == True:
-                                if grid[y + y_check][x + x_check].type == 0 and not grid[y + y_check][x + x_check].revealed:
+                                tile_check = grid[y + y_check][x + x_check]
+                                # continues to check surrounding tiles if the tile hasn't been revealed, is blank, and isn't flagged
+                                if tile_check.type == 0 and not tile_check.revealed and not tile_check.flagged:
                                     blank_tile_revealed = True
-                                grid[y + y_check][x + x_check].reveal(False)
+                                grid[y + y_check][x + x_check].reveal(True)
                             x_check += 1
                         y_check += 1
                 x += 1
             y += 1
-
 
 
 # pygame setup
@@ -141,6 +150,9 @@ SCREEN_HEIGHT = 600
 SCREEN_WIDTH = 1000
 size = (SCREEN_WIDTH, SCREEN_HEIGHT)
 screen = pygame.display.set_mode(size)
+# minimum screen sizes
+min_screen_height = 100
+min_screen_width = 100
 
 # variable setup
 menu_screen = True
@@ -148,6 +160,7 @@ height = 20
 length = 20
 BOARD_SIZE = (height, length)
 number_of_mines = 60
+flags_left = number_of_mines
 run = True
 win = False
 lose = False
@@ -173,17 +186,22 @@ while run:
 
             if event.button == 3:
                 # checks for right mouse click
-                check_grid(grid, event.pos, True)
+                if not lose:    # prevents player from updating flags when the game is lost
+                    check_grid(grid, event.pos, True)
 
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_SPACE and (win or lose):
+                menu_screen = True
                 BOARD_SIZE = (height, length)
                 run = True
                 win = False
                 lose = False
                 grid = generate_grid(number_of_mines, height, length)
                 grid = give_numbers(grid)
+                flags_left = number_of_mines
                 # restarts game if space is pressed after game end
+
+
 
     screen.fill((143, 143, 143))
     # NO BLIT ZONE ABOVE
