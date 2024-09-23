@@ -2,6 +2,7 @@ import pygame
 import time
 import random
 from tile import Tile
+from timer import Timer
 
 # add win checker
 # add timer
@@ -155,6 +156,12 @@ min_screen_height = 100
 min_screen_width = 100
 
 # variable setup
+# time variables
+time_start = time.time()
+time_ones_display = 0
+time_tens_display = 0
+time_hundreds_display = 0
+
 menu_screen = True
 height = 20
 length = 20
@@ -167,6 +174,10 @@ lose = False
 grid = generate_grid(number_of_mines, height, length)
 grid = give_numbers(grid)
 # message = input_font.render("TEST", True, (255, 255, 255))
+timer_numbers = []
+
+for i in range(3):
+    timer_numbers.append(Timer(26 * i, 0))
 
 while run:
     # --- Main event loop --- #
@@ -200,8 +211,16 @@ while run:
                 grid = give_numbers(grid)
                 flags_left = number_of_mines
                 # restarts game if space is pressed after game end
+    if not (lose or win):
+        time_running = round(time.time() - time_start)
+    
+    time_ones_display = time_running % 10
+    time_tens_display = int((time_running % 100 - time_ones_display) / 10)
+    time_hundreds_display = int((time_running % 1000 - time_tens_display - time_ones_display) / 100)
 
-
+    timer_numbers[2].update(time_ones_display)
+    timer_numbers[1].update(time_tens_display)
+    timer_numbers[0].update(time_hundreds_display)
 
     screen.fill((143, 143, 143))
     # NO BLIT ZONE ABOVE
@@ -209,5 +228,7 @@ while run:
         for tile in row:
             screen.blit(tile.image, tile.rect)
     # blits all tiles
+    for i in range(len(timer_numbers)):
+        screen.blit(timer_numbers[i].image, timer_numbers[i].rect)
 
     pygame.display.update()
