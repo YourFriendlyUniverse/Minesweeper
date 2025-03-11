@@ -8,6 +8,6 @@
 ### To add:<br/>
 
 - Menu screen (Grid Size and mine number customization)
-- Flags left
-- Auto resizing window
-- Winning
+- Displaying Mines/Flags left
+- Win screen
+- Chording (LMB + RMB to reveal tiles around flagged tiles)

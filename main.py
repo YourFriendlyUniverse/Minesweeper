@@ -5,13 +5,12 @@ from tile import Tile
 from timer import Timer
 
 # add win checker
-# add timer
-# add flags left
+# add chording
+# add flags/mines left
 # add menu screen (options for board size and number of mines)
-# add auto resize window
 
 # reveals the tile the player clicked on
-def check_grid(grid, position, flag):
+def check_grid(grid: list, position, flag: bool):
     for row in grid:
         for tile in row:
             if tile.rect.collidepoint(position):
@@ -24,7 +23,7 @@ def check_grid(grid, position, flag):
                     return False
 
 # generates the tiles' numbers
-def give_numbers(grid):
+def give_numbers(grid: list):
     y = 0
     for row in grid:
         x = 0
@@ -62,13 +61,13 @@ def give_numbers(grid):
     return grid
 
 # reveals all tiles when you lose
-def reveal_mine_locations(grid):
+def reveal_mine_locations(grid: list):
     for row in grid:
         for tile in row:
             tile.reveal(False)
 
 # generates the inital grid
-def generate_grid(number_of_mines, grid_height, grid_length):
+def generate_grid(number_of_mines: int, grid_height: int, grid_length: int) -> list:
     grid = []
     y = 0
     # generates base grid
@@ -95,7 +94,7 @@ def generate_grid(number_of_mines, grid_height, grid_length):
     return grid
 
 # reveals the surrounding tiles if the tile that was uncovered was blank
-def reveal_surrounding_tiles(grid):
+def reveal_surrounding_tiles(grid: list):
     blank_tile_revealed = True
     while blank_tile_revealed:
         blank_tile_revealed = False
@@ -103,12 +102,12 @@ def reveal_surrounding_tiles(grid):
         for row in grid:
             x = 0
             for tile in row:
-                # where to check relative to the tile
+                # where to check relative to the center tile
                 tile_surrounding_update = [[True, True, True],
                                         [True, False, True],
                                         [True, True, True]]
                 if tile.type == 0 and tile.revealed:
-                    # checks if tile is on the border to not update out of the list
+                    # checks if tile is on the border to not get out of bounds error
                     if x == 0:
                         tile_surrounding_update[0][0] = False
                         tile_surrounding_update[1][0] = False
@@ -161,11 +160,12 @@ time_start = time.time()
 time_ones_display = 0
 time_tens_display = 0
 time_hundreds_display = 0
-
-menu_screen = True
+# board size
 height = 20
 length = 20
 BOARD_SIZE = (height, length)
+# gameplay variables
+menu_screen = True
 number_of_mines = 60
 flags_left = number_of_mines
 run = True
@@ -173,7 +173,6 @@ win = False
 lose = False
 grid = generate_grid(number_of_mines, height, length)
 grid = give_numbers(grid)
-# message = input_font.render("TEST", True, (255, 255, 255))
 timer_numbers = []
 
 for i in range(3):
@@ -182,7 +181,7 @@ for i in range(3):
 while run:
     # --- Main event loop --- #
     for event in pygame.event.get():  # User did something
-        if event.type == pygame.QUIT:  # If user clicked close
+        if event.type == pygame.QUIT:
             run = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -200,7 +199,8 @@ while run:
                 if not lose:    # prevents player from updating flags when the game is lost
                     check_grid(grid, event.pos, True)
 
-        if event.type == pygame.KEYDOWN:
+        elif event.type == pygame.KEYDOWN:
+            # restarts game if space is pressed after game end            
             if event.key == pygame.K_SPACE and (win or lose):
                 menu_screen = True
                 BOARD_SIZE = (height, length)
@@ -210,24 +210,29 @@ while run:
                 grid = generate_grid(number_of_mines, height, length)
                 grid = give_numbers(grid)
                 flags_left = number_of_mines
-                # restarts game if space is pressed after game end
+                time_start = time.time()
+                time_ones_display = 0
+                time_tens_display = 0
+                time_hundreds_display = 0
     if not (lose or win):
         time_running = round(time.time() - time_start)
-    
+
+    # timer calculation
     time_ones_display = time_running % 10
     time_tens_display = int((time_running % 100 - time_ones_display) / 10)
     time_hundreds_display = int((time_running % 1000 - time_tens_display - time_ones_display) / 100)
-
+    # timer update
     timer_numbers[2].update(time_ones_display)
     timer_numbers[1].update(time_tens_display)
     timer_numbers[0].update(time_hundreds_display)
 
     screen.fill((143, 143, 143))
     # NO BLIT ZONE ABOVE
+    # blits all tiles
     for row in grid:
         for tile in row:
             screen.blit(tile.image, tile.rect)
-    # blits all tiles
+    # blits in timer
     for i in range(len(timer_numbers)):
         screen.blit(timer_numbers[i].image, timer_numbers[i].rect)
 

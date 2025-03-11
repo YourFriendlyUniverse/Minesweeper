@@ -1,7 +1,26 @@
 import pygame
 
-
 class Tile:
+    """Represents a single tile
+
+    ---Attributes---
+    x: int
+        x coordinate of upper left corner of the image
+    y: int
+        y coordinate of upper left corner of the image
+    type
+        Denotes either the tile being a mine or amount of mines surrounding the tile, used to determine what image to show when the tile is revealed
+    revealed: bool
+        If the tile has been revealed
+    flagged: bool
+        If the tile has been flagged
+    image: Surface
+        The image to display for the tile
+    image_size: Tuple[int, int]
+        The size of the image in pixels
+    rect: Pygame.Rect
+        The hitbox of the tile, used to check if the tile has been clicked on
+    """
     def __init__(self, x, y, tile_type):
         self.x = x
         self.y = y
@@ -13,7 +32,14 @@ class Tile:
         self.image_size = self.image.get_size()
         self.rect = pygame.Rect(self.x, self.y, self.image_size[0], self.image_size[1])
 
-    def reveal(self, was_clicked):
+    def reveal(self, was_clicked: bool):
+        """reveals the tile type
+
+        ---Parameters---
+        was_clicked: bool
+            Whether or not the tile being revealed was because it was clicked
+            Only difference is in revealing mines, as if a mine is clicked, a different image is used for that tile than if it wasn't
+        """
         # makes sure the tile isn't already revealed or flagged
         if not self.flagged and not self.revealed:
             # reveals itslef and updates its image
@@ -32,6 +58,7 @@ class Tile:
             self.image = pygame.image.load("Tiles/tile_flagged_wrong.png")
 
     def flag_tile(self):
+        """flags/unflags the tile"""
         # checks if the tile is already flagged and not revealed
         if not self.flagged and not self.revealed:
             self.flagged = True
