@@ -4,25 +4,33 @@ import random
 from tile import Tile
 from timer import Timer
 
+# TODO:
 # add win checker
-# add chording
 # add flags/mines left
 # add menu screen (options for board size and number of mines)
 
+# returns the x and y of the clicked tile, returns -1 for both values if a tile isn't clicked
+def collided_tile_index(grid: list, position) -> tuple[int, int]:
+    for y in range(len(grid)):
+        for x in range(len(grid[y])):
+            if (grid[y][x].rect.collidepoint(position)):
+                return y, x
+    return -1, -1
+
 # reveals the tile the player clicked on
 def check_grid(grid: list, position, flag: bool):
-    for row in grid:
-        for tile in row:
-            if tile.rect.collidepoint(position):
-                if flag:
-                    tile.flag_tile()
-                    # puts a flag on the tile
-                elif tile.reveal(True) == "mine":
-                    return True
-                else:
-                    return False
+    y, x = collided_tile_index(grid, position)
+    # if tile was clicked
+    if y != -1 and x != -1:
+        if flag:
+            grid[y][x].flag_tile()
+            # puts a flag on the tile
+        elif grid[y][x].reveal(True) == "mine":
+            return True
+        else:
+            return False
 
-# generates the tiles' numbers
+# generates the tiles' numbers for the surrounding number of mines
 def give_numbers(grid: list):
     y = 0
     for row in grid:
@@ -121,13 +129,17 @@ def reveal_surrounding_tiles(grid: list):
                     elif y == len(grid) - 1:
                         tile_surrounding_update[2] = [False, False, False]
 
+                    # the y position of the tile to check, relative to the center tile
                     y_check = -1
+                    # loops through all the surrounding tiles, and reveals them if they aren't on the border
                     for tile_row in tile_surrounding_update:
+                        # the x position of the tile to check, relative to the center tile
                         x_check = -1
                         for check in tile_row:
-                            if check == True:
+                            if check:
+                                # coordinites of the tile to check
                                 tile_check = grid[y + y_check][x + x_check]
-                                # continues to check surrounding tiles if the tile hasn't been revealed, is blank, and isn't flagged
+                                # allows the function to continue to check tiles if the tile that's going to be revealed hasn't been revealed, is blank, and isn't flagged
                                 if tile_check.type == 0 and not tile_check.revealed and not tile_check.flagged:
                                     blank_tile_revealed = True
                                 grid[y + y_check][x + x_check].reveal(True)
@@ -136,6 +148,63 @@ def reveal_surrounding_tiles(grid: list):
                 x += 1
             y += 1
 
+# reveals all unflagged tiles around an uncovered tile, given that the # of flags around it is equal to its number, returns True if a mine was uncovered, False otherwise
+def chord(grid : list, position) -> bool:
+    # where to check relative to the center tile
+    tile_surrounding_update = [[True, True, True],
+                                [True, False, True],
+                                [True, True, True]]
+    y, x = collided_tile_index(grid, position)
+    # if a tile was clicked
+    if (y != -1 and x != -1):
+        if grid[y][x].revealed:
+            mine_revealed = False
+            # checks if tile is on the border to not get out of bounds error
+            if x == 0:
+                tile_surrounding_update[0][0] = False
+                tile_surrounding_update[1][0] = False
+                tile_surrounding_update[2][0] = False
+            elif x == len(row) - 1:
+                tile_surrounding_update[0][2] = False
+                tile_surrounding_update[1][2] = False
+                tile_surrounding_update[2][2] = False
+            if y == 0:
+                tile_surrounding_update[0] = [False, False, False]
+            elif y == len(grid) - 1:
+                tile_surrounding_update[2] = [False, False, False]
+
+            surrounding_flags = 0
+            # the y position of the tile to check, relative to the center tile
+            y_check = -1
+            # loops through all the surrounding tiles, and checks if they're flagged and if so, adds 1 to the total surrounding number of flags
+            for tile_row in tile_surrounding_update:
+                # the x position of the tile to check, relative to the center tile
+                x_check = -1
+                for check in tile_row:
+                    if check:
+                        if grid[y + y_check][x + x_check].flagged:
+                            surrounding_flags += 1
+                    x_check += 1
+                y_check += 1
+
+            # if the number of flags matches the tile's number
+            if grid[y][x].type == surrounding_flags:
+                # the relative y position of the tile to reveal from the center tile
+                y_rel_reveal = -1
+                # loops thrugh all surrounding tiles, revealing all of them and checking if a mine was revealed
+                for reveal_row in tile_surrounding_update:
+                    # the relative x position of the tile to reveal from the center tile
+                    x_rel_reveal = -1
+                    for reveal in reveal_row:
+                        # if the tile can be revealed and isnt flagged
+                        if reveal and grid[y + y_rel_reveal][x + x_rel_reveal].flagged == False:
+                            grid[y + y_rel_reveal][x + x_rel_reveal].reveal(True)
+                            if (grid[y + y_rel_reveal][x + x_rel_reveal].type == "mine"):
+                                mine_revealed = True
+                        x_rel_reveal += 1
+                    y_rel_reveal += 1
+            return mine_revealed
+    return False
 
 # pygame setup
 pygame.init()
@@ -184,6 +253,16 @@ while run:
         if event.type == pygame.QUIT:
             run = False
         if event.type == pygame.MOUSEBUTTONDOWN:
+            mouse_pressed_buttons = pygame.mouse.get_pressed()
+            # checks if both right and left mouse buttons are down
+            if (event.button == 1 or event.button == 3) and (mouse_pressed_buttons[0] and mouse_pressed_buttons[2]):
+                if not lose:
+                    lose = chord(grid, event.pos)
+                    reveal_surrounding_tiles(grid)
+                if lose:
+                    # reveals all tiles if the player lost
+                    reveal_mine_locations(grid)
+
             if event.button == 1:
                 # checks for left mouse click
                 if not lose:
@@ -194,7 +273,7 @@ while run:
                     # reveals all tiles if the player lost
                     reveal_mine_locations(grid)
 
-            if event.button == 3:
+            elif event.button == 3:
                 # checks for right mouse click
                 if not lose:    # prevents player from updating flags when the game is lost
                     check_grid(grid, event.pos, True)
