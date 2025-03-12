@@ -13,5 +13,10 @@
 - Menu screen (Grid Size and mine number customization)
 - Displaying Mines/Flags left
 - Win screen
-
 - Safe first click
+
+# Thanks to:<br/>
+
+- Microsoft (original minesweeper creator)
+- Spriters Resource (game textures)
+- Superjustinbros (uploader of textures that are used)
